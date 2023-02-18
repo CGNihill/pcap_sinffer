@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message pack {
+    uint32 time = 1;
+    uint32 frameSize = 2;
+    string s_mac = 3;
+    string d_mac = 4;
+    uint32 IPv = 5;
+    string s_ip = 6;
+    string d_ip = 7;
+    string t_proto = 8;
+    uint32 s_port = 9;
+    uint32 d_port = 10;
+    string payload = 11;
+}

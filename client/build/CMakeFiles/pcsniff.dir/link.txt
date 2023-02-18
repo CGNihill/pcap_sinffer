@@ -1,2 +1,0 @@
-/usr/bin/ar qc libpcsniff.a CMakeFiles/pcsniff.dir/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/external/sniffer/sniffer.cpp.o
-/usr/bin/ranlib libpcsniff.a

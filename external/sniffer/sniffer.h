@@ -24,18 +24,25 @@ private:
     void list_show(pcap_if_t *dev);
 
 public:
+
     pc_sniffer();
 
     ~pc_sniffer();
 
+    // show all avaliable devices from (pacp_if_t *interfaces) list 
+    void show_interfaces(){ list_show(interfaces); }
+
     // documentation for filter_expression : https://www.tcpdump.org/manpages/pcap-filter.7.html
     // if use default value will set filter "ip or ip6"
-    void init_interface(const char *device, const char *filter_expression = nullptr);
+    void init_interface(const char *device, char const *filter_expression = nullptr);
 
     void scan(int count);
 
     void init_file(char const *path);
 
+    void breakloop();
+
     // satic handler function called in pcap_loop from pcap_handler
-    inline static std::function<void(u_char *user, uint32_t cap, uint32_t len, __time_t tv_sec, __suseconds_t tv_usec, const u_char *data)> h_func;
+    inline static std::function<void(u_char *user, uint32_t cap, uint32_t len, __time_t tv_sec, __suseconds_t tv_usec, const u_char *data)> h_func 
+        = [](u_char *user, uint32_t cap, uint32_t len, __time_t tv_sec, __suseconds_t tv_usec, const u_char *data){};
 };

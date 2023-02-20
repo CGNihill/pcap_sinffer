@@ -18,8 +18,6 @@ pc_sniffer::pc_sniffer()
     {
         throw std::runtime_error(errbuf);
     }
-
-    list_show(interfaces); // show all avaliable devices from (pacp_if_t *interfaces) list
 }
 
 pc_sniffer::~pc_sniffer()
@@ -33,7 +31,7 @@ pc_sniffer::~pc_sniffer()
     }
 }
 
-void pc_sniffer::init_interface(const char *device, const char *filter_expression)
+void pc_sniffer::init_interface(const char *device, char const *filter_expression)
 {
     bpf_u_int32 net, mask;
     if (pcap_lookupnet(device, &net, &mask, errbuf)) // find the IP network number and netmask for a device
@@ -79,7 +77,6 @@ void pc_sniffer::init_file(char const *path)
     {
         throw std::runtime_error(errbuf);
     }
-
     pcap_pkthdr *header;
     const u_char *data;
     while (pcap_next_ex(file_data, &header, &data) > 0)
@@ -88,4 +85,8 @@ void pc_sniffer::init_file(char const *path)
     }
 
     pcap_close(file_data);
+}
+
+void pc_sniffer::breakloop(){
+    pcap_breakloop(handler);
 }

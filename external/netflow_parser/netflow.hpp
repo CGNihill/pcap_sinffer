@@ -69,5 +69,5 @@ namespace netflow_v9
     struct comon_field{
         const char* data;
         int len;
-    }
+    };
 };

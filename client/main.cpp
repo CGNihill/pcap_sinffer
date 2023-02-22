@@ -5,6 +5,8 @@
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
 #include <netinet/in.h>
+#include <netinet/udp.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 
 #include "../external/sniffer/sniffer.h"
@@ -82,40 +84,80 @@ void handler(u_char *user, uint32_t cap, uint32_t len, __time_t tv_sec, __suseco
     switch (ntohs(eth.ether_type))
     {
     case ETHERTYPE_IP:
-    {
-        ip iph = *(ip*)(p + data_index);
-        data_index += sizeof(iph);
-        
-        pa.set_ipv(iph.ip_v);
+        {
+            ip iph = *(ip*)(p + data_index);
+            data_index += sizeof(iph);
+            
+            pa.set_ipv(iph.ip_v);
 
-        char ipa[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &iph.ip_src, ipa, INET_ADDRSTRLEN);
-        pa.set_s_ip(ipa);
-        inet_ntop(AF_INET, &iph.ip_dst, ipa, INET_ADDRSTRLEN);
-        pa.set_d_ip(ipa);
+            char ipa[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &iph.ip_src, ipa, INET_ADDRSTRLEN);
+            pa.set_s_ip(ipa);
+            inet_ntop(AF_INET, &iph.ip_dst, ipa, INET_ADDRSTRLEN);
+            pa.set_d_ip(ipa);
 
-        ip_tos = iph.ip_tos;
-    }
+            ip_tos = iph.ip_tos;
+        }
         break;
 
     case ETHERTYPE_IPV6:
-    {
-        ip6_hdr iph = *(ip6_hdr*)(p + data_index);
-        data_index += sizeof(iph);
+        {
+            ip6_hdr iph = *(ip6_hdr*)(p + data_index);
+            data_index += sizeof(iph);
 
-        pa.set_ipv(iph.ip6_ctlun.ip6_un2_vfc);
+            pa.set_ipv(iph.ip6_ctlun.ip6_un2_vfc);
 
-        char ipa[INET6_ADDRSTRLEN];
-        inet_ntop(AF_INET6, &iph.ip6_src, ipa, INET6_ADDRSTRLEN);
-        pa.set_s_ip(ipa);
-        inet_ntop(AF_INET6, &iph.ip6_dst, ipa, INET6_ADDRSTRLEN);
-        pa.set_d_ip(ipa);
+            char ipa[INET6_ADDRSTRLEN];
+            inet_ntop(AF_INET6, &iph.ip6_src, ipa, INET6_ADDRSTRLEN);
+            pa.set_s_ip(ipa);
+            inet_ntop(AF_INET6, &iph.ip6_dst, ipa, INET6_ADDRSTRLEN);
+            pa.set_d_ip(ipa);
 
-        ip_tos = iph.ip6_ctlun.ip6_un1.ip6_un1_nxt;
-    }
+            ip_tos = iph.ip6_ctlun.ip6_un1.ip6_un1_nxt;
+        }
         break;
     
     default:
+        {
+            pa.set_ipv(0);
+            pa.set_s_ip("UNDEFINED");
+            pa.set_d_ip("UNDEFINED");
+        }
+        break;
+    }
+
+    switch (ip_tos)
+    {
+    case IPPROTO_TCP:
+        {
+            tcphdr prth = *(tcphdr*)(p + data_index);
+            data_index += sizeof(prth);
+
+            pa.set_t_proto("TCP");
+
+            pa.set_s_port(prth.th_sport);
+            pa.set_d_port(prth.th_dport);
+        }
+        break;
+    case IPPROTO_UDP:
+        {
+            udphdr prth = *(udphdr*)(p + data_index);
+            data_index += sizeof(prth);
+
+            pa.set_t_proto("UDP");
+
+            pa.set_s_port(prth.uh_sport);
+            pa.set_d_port(prth.uh_dport);
+        }
+        break;
+    
+    default:
+        {
+            pa.set_t_proto("UNDEFINED");
+
+            pa.set_s_port(0);
+            pa.set_d_port(0);
+        }
         break;
     }
 
@@ -125,6 +167,9 @@ void handler(u_char *user, uint32_t cap, uint32_t len, __time_t tv_sec, __suseco
     cout << pa.ipv() << endl;
     cout << pa.s_ip() << endl;
     cout << pa.d_ip() << endl;
+    cout << pa.t_proto() << endl;
+    cout << pa.s_port() << endl;
+    cout << pa.d_port() << endl;
     cout << "\n\n";
     exit(-1);
 

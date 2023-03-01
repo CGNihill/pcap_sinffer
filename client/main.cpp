@@ -96,7 +96,7 @@ void handler(u_char *user, uint32_t cap, uint32_t len, __time_t tv_sec, __suseco
             inet_ntop(AF_INET, &iph.ip_dst, ipa, INET_ADDRSTRLEN);
             pa.set_d_ip(ipa);
 
-            ip_tos = iph.ip_tos;
+            ip_tos = iph.ip_p;
         }
         break;
 
@@ -171,7 +171,6 @@ void handler(u_char *user, uint32_t cap, uint32_t len, __time_t tv_sec, __suseco
     cout << pa.s_port() << endl;
     cout << pa.d_port() << endl;
     cout << "\n\n";
-    exit(-1);
 
     delete p;
 }

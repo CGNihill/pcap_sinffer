@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include <vector>
+#include <map>
 #include <arpa/inet.h>
 
 struct comon_netflow_header
@@ -66,8 +67,15 @@ namespace netflow_v5
 
 namespace netflow_v9_v10
 {
-    struct comon_field{
-        const char* data;
-        int len;
+    class NF9_10{
+    private:
+        struct header{
+            struct comon_netflow_header comon;
+            uint32_t sysUptime, UnixSecs, SequenceNumber, SID;
+        };
+
+        class Template{
+        };
+        static std::map<int, Template> tmpl;
     };
 };

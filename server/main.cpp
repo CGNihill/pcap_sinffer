@@ -1,8 +1,10 @@
 #include <iostream>
+#include "../external/nats-client/nc.h"
 
 using namespace std;
 
 int main(){
-    cout << "server" << endl;
+    nats_client rec;
+    
     return 0;
 }

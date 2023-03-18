@@ -75,7 +75,36 @@ namespace netflow_v9_v10
         };
 
         class Template{
+        private:
+            struct field{
+                uint16_t type = 0;
+                uint16_t length = 0;
+            };
+            uint16_t id = 0;
+            uint16_t fieldcount = 0;
+            field *fields = nullptr;
+
+        public:
+            Template() = delete;
+            Template(u_char *buf){
+                id = ntohs(*(uint16_t*)buf);
+                fieldcount = ntohs(*(uint16_t*)(buf + sizeof(uint16_t)));
+                fields = new field[fieldcount];
+                for (uint16_t i = 0; i < (fieldcount * 2); i += 2){
+                    fields[i].type = *(uint16_t*)(buf + sizeof(uint16_t) * (2 + i));
+                    fields[i].length = *(uint16_t*)(buf + sizeof(uint16_t) * (3 + i));
+                }
+            }
+            ~Template(){
+                if (fields == nullptr){ return; } 
+                delete fields;
+                fields = nullptr;
+            }
+
+            uint16_t const& get_fieldcount() const { return fieldcount; }
+            uint16_t const& get_templateID() const { return id; }
         };
-        static std::map<int, Template> tmpl;
+        
+        static std::map<int, Template> tmpls;
     };
 };

@@ -77,7 +77,8 @@ namespace netflow_v9_v10
     class NF9{
     private:
 
-        // source = https://www.rfc-editor.org/rfc/rfc3954.html#section-8
+
+        // source = https://www.rfc-editor.org/rfc/rfc3954.html#section-8 & https://www.ciscopress.com/articles/article.asp?p=2812391&seqNum=3
         enum RecordTypes : uint8_t{
             IN_BYTES = 1,
             IN_PKTS = 2,
@@ -149,52 +150,79 @@ namespace netflow_v9_v10
         // Data/Option Template
         class DO_Template{
         private:
-            struct field{
+            struct Field{
                 uint16_t type = 0;
                 uint16_t length = 0;
             };
+
             uint16_t id = 0;
             uint16_t fieldcount = 0;
             uint16_t bitesize = 0;
-            field *fields = nullptr;
+            Field *fields = nullptr;
 
         public:
             DO_Template() = delete;
 
+            // length is missing in the args because it is already in the buffer (Flowset Length)
             DO_Template(u_char const * const buf){
                 id = ntohs(*(uint16_t*)buf);
 
                 fieldcount = ntohs(*(uint16_t*)(buf + sizeof(uint16_t)));
+                
 
-                fields = new field[fieldcount];
+                fields = new Field[fieldcount];
 
                 for (uint16_t i = 0; i < (fieldcount * 2); i += 2){
-                    fields[i].type = *(uint16_t*)(buf + sizeof(uint16_t) * (2 + i));
-                    fields[i].length = *(uint16_t*)(buf + sizeof(uint16_t) * (3 + i));
-                    bitesize += sizeof(uint16_t);
+                    fields[i].type = ntohs(*(uint16_t*)(buf + sizeof(uint16_t) * (2 + i)));
+                    fields[i].length = ntohs(*(uint16_t*)(buf + sizeof(uint16_t) * (3 + i)));
+                    bitesize += fields[i].length;
                 }
             }
+
             ~DO_Template(){
                 if (fields == nullptr){ return; } 
                 delete fields;
                 fields = nullptr;
             }
 
+            uint16_t const& get_bitesize() const { return bitesize; }
             uint16_t const& get_fieldcount() const { return fieldcount; }
             uint16_t const& get_templateID() const { return id; }
         };
 
         class DynamicFlowRecord{
         private:
-            class Flow{};
+            uint16_t flowset_ID = 0;
+
+            class Flow{
+            private:
+                std::vector<char*> dataflow;
+
+            public:
+                Flow(){
+                }
+
+                ~Flow(){
+                    for(int i = 0; i < dataflow.size(); i++){
+                        delete dataflow[i];
+                        dataflow[i] = nullptr;
+                    }
+                }
+
+            };
 
         public:
+            DynamicFlowRecord() = default;
+
+            // length is missing in the args because it is already in the buffer (Flowset Length)
+            DynamicFlowRecord(u_char const * const f_buff){
+            }
         
         private:
             std::vector<int, Flow> flows;
 
         };
-
+        
     public:
         NF9() = default;
         NF9(u_char const * const buff, uint16_t len){ parse_buff(buff, len); }
@@ -202,7 +230,18 @@ namespace netflow_v9_v10
         void parse_buff(u_char const * const buff, uint16_t len){
             char b[len];
             memcpy(b, buff, len);
+            uint16_t buff_i = 0; // buffer position index
             head = *(header*)(b);
+            buff_i += sizeof(header);
+
+            for(int i = 0; ; i++){
+                uint16_t s = ntohs(*(uint16_t*)(b + buff_i + sizeof(uint16_t) * 2));
+                // FlowsetID (0 - DataTemplate / 1 - OptionTemplate)
+                if (1 == ntohs(*(uint16_t*)(b + buff_i)) || 0 == ntohs(*(uint16_t*)(b + buff_i))){
+                    // DO_Template()
+                }
+            }
+
         }
 
     private:

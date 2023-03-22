@@ -79,6 +79,74 @@ void database::parse_query(std::string q, const std::string table_name)
     }
 }
 
+/*
+// void database::parse_query(std::string q, const std::string table_name)
+// {
+//     std::istringstream query_stream(q);
+//     std::string token;
+//     while (std::getline(query_stream, token, ','))
+//     {
+//         if (token.empty())
+//             continue;
+
+//         std::istringstream tab(token);
+//         std::string type, name;
+//         tab >> type >> name;
+
+//         if (type.empty() || name.empty())
+//             continue;
+
+//         clickhouse::Column* column = create_column(type);
+//         if (column != nullptr)
+//         {
+//             columns[table_name][name] = column;
+//         }
+//     }
+// }
+
+// clickhouse::Column* database::create_column(const std::string& type)
+// {
+//     if (type == "Int8")
+//         return new clickhouse::ColumnInt8();
+//     else if (type == "Int16")
+//         return new clickhouse::ColumnInt16();
+//     else if (type == "Int32")
+//         return new clickhouse::ColumnInt32();
+//     else if (type == "Int64")
+//         return new clickhouse::ColumnInt64();
+//     else if (type == "Int128")
+//         return new clickhouse::ColumnInt128();
+//     else if (type == "UInt8")
+//         return new clickhouse::ColumnUInt8();
+//     else if (type == "UInt16")
+//         return new clickhouse::ColumnUInt16();
+//     else if (type == "UInt32")
+//         return new clickhouse::ColumnUInt32();
+//     else if (type == "UInt64")
+//         return new clickhouse::ColumnUInt64();
+//     else if (type == "Float32")
+//         return new clickhouse::ColumnFloat32();
+//     else if (type == "Float64")
+//         return new clickhouse::ColumnFloat64();
+//     else if (type == "String")
+//         return new clickhouse::ColumnString();
+//     else if (type == "UUID")
+//         return new clickhouse::ColumnUUID();
+//     else if (type == "Date")
+//         return new clickhouse::ColumnDate();
+//     else if (type == "Date32")
+//         return new clickhouse::ColumnDate32();
+//     else if (type == "DateTime")
+//         return new clickhouse::ColumnDateTime();
+//     else if (type == "IPv4")
+//         return new clickhouse::ColumnIPv4();
+//     else if (type == "IPv6")
+//         return new clickhouse::ColumnIPv6();
+//     else
+//         return nullptr;
+// }
+*/
+
 database::database(const std::string user, const std::string password, const std::string host, const int port, const std::string database_name, const std::string table_name, const std::string table_struct_querry, const std::string engine)
     : cl_options(clickhouse::ClientOptions().SetUser(user).SetPassword(password).SetPort(port).SetHost(host).SetDefaultDatabase(database_name)),
       client(cl_options)

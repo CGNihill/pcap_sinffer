@@ -126,13 +126,33 @@ namespace netflow_v9_v10
         private:
             header head;
 
+            // frequently used structure used for : FlowSet_header, Field, DATA Template...
+            struct Comon_str{
+                uint16_t id, len;
+                
+                constexpr void to_current_byte_order(){
+                #if __BYTE_ORDER == __LITTLE_ENDIAN
+                id = ntohs(id);
+                len = ntohs(len);
+                #endif
+                }
+            };
+
+            struct Option_header{
+                uint16_t id, len;
+                
+                constexpr void to_current_byte_order(){
+                #if __BYTE_ORDER == __LITTLE_ENDIAN
+                id = ntohs(id);
+                len = ntohs(len);
+                #endif
+                }
+            };
+
             class Template{
             private:
-                struct Field{
-                    uint16_t type, length;
-                };
 
-                std::vector<Field> fields;
+                std::vector<Comon_str> fields;
                 uint16_t id, count; 
 
             public:
@@ -150,31 +170,27 @@ namespace netflow_v9_v10
                     count = *(uint16_t*)(template_buff + sizeof(uint16_t));
                     #endif
 
-                    if (len < (sizeof(uint16_t) * 2 + sizeof(Field) * count)){
+                    if (len < (sizeof(uint16_t) * 2 + sizeof(Comon_str) * count)){
                         throw std::runtime_error("Template buffer length is insufficient.");
                     }
 
                     for(size_t i = 0; i < count; i++){
-                        Field field = *(Field*)(template_buff + (sizeof(uint16_t) * 2 + sizeof(Field) * i));
+                        Comon_str field = *(Comon_str*)(template_buff + (sizeof(uint16_t) * 2 + sizeof(Comon_str) * i));
 
-                    #if __BYTE_ORDER == __LITTLE_ENDIAN
-                        field.type = ntohs(field.type);
-                        field.length = ntohs(field.length);
-                    #endif
+                        field.to_current_byte_order();
 
                         fields.push_back(field);
                     }
                 }
 
+                ~Template() = default;
+
             };
 
             class Options{
             private:
-                struct Field{
-                    uint16_t type, length;
-                };
 
-                std::vector<Field> fields;
+                std::vector<Comon_str> fields;
                 uint16_t id, scope_len, length; 
 
             public:
@@ -196,20 +212,21 @@ namespace netflow_v9_v10
 
                     uint16_t count = scope_len + length;
 
-                    if (len < (sizeof(uint16_t) * 2 + sizeof(Field) * count)){
+                    if (len < (sizeof(uint16_t) * 2 + sizeof(Comon_str) * count)){
                         throw std::runtime_error("Template buffer length is insufficient.");
                     }
 
                     for(size_t i = 0; i < count; i++){
-                        Field field = *(Field*)(options_buff + (sizeof(uint16_t) * 2 + sizeof(Field) * i));
-                        #if __BYTE_ORDER == __LITTLE_ENDIAN
-                        field.type = ntohs(field.type);
-                        field.length = ntohs(field.length);
-                        #endif
+                        Comon_str field = *(Comon_str*)(options_buff + (sizeof(uint16_t) * 2 + sizeof(Comon_str) * i));
+                        
+                        field.to_current_byte_order();
 
                         fields.push_back(field);
                     }
                 }
+
+                ~Options() = default;
+
             };
 
             static std::map<uint16_t, Template> tmpls; // all templates
@@ -218,12 +235,68 @@ namespace netflow_v9_v10
         public:
             NF9_Pack() = default;
 
-            void from_buffer(u_char const * const buffer, uint16_t length){
+            void from_buffer(u_char const * const buffer, size_t length){
                 head = *(header*)buffer;
 
                 head.to_current_byte_order();
 
-                // uint16_t type = ()
+                size_t flow_buf_index = sizeof(header);
+                for(size_t i = 0; flow_buf_index < length; i++){
+                    Comon_str flow_hdr = *(Comon_str*)(buffer + flow_buf_index);
+
+                    flow_hdr.to_current_byte_order();
+
+                    if ((sizeof(header) + flow_buf_index + flow_hdr.len) > length){
+                        throw std::runtime_error("Buffer length is insufficient for the next flowset.");
+                    }
+
+                    flow_buf_index += sizeof(Comon_str);
+                    uint16_t current_base_index = flow_buf_index;
+
+                    u_char *temp_buff = nullptr; 
+                    if (flow_hdr.id == 0){
+                        for(;flow_buf_index < (current_base_index + flow_hdr.len);){
+                            //get template id and template count
+                            Comon_str template_head = *(Comon_str*)(buffer + flow_buf_index);
+                            template_head.to_current_byte_order();
+
+                            // create a buffer for Template constructor
+                            size_t s = (sizeof(Comon_str) + template_head.len * sizeof(uint16_t) * 2);
+
+                            if (s > (current_base_index + flow_hdr.len)){
+                                throw std::runtime_error("FlowSet buffer length is insufficient for the next template.");
+                            }
+
+                            memcpy(temp_buff, (buffer + flow_buf_index), s);
+
+                            tmpls[template_head.id] = Template(temp_buff, s);
+
+                            flow_buf_index += s;
+                        }
+                    }
+                    if (flow_hdr.id == 0){
+                        for(;flow_buf_index < (current_base_index + flow_hdr.len);){
+                            //get template id and template count
+                            Comon_str template_head = *(Comon_str*)(buffer + flow_buf_index);
+                            template_head.to_current_byte_order();
+
+                            // create a buffer for Template constructor
+                            size_t s = (sizeof(Comon_str) + template_head.len * sizeof(uint16_t) * 2);
+
+                            if (s > (current_base_index + flow_hdr.len)){
+                                throw std::runtime_error("FlowSet buffer length is insufficient for the next template.");
+                            }
+
+                            memcpy(temp_buff, (buffer + flow_buf_index), s);
+
+                            tmpls[template_head.id] = Template(temp_buff, s);
+
+                            flow_buf_index += s;
+                        }
+                    }
+
+                    // flow_buf_index += flow_hdr.len;
+                }
             }
     };
 };

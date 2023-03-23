@@ -230,10 +230,23 @@ namespace netflow_v9_v10
 
         };
 
-        class Data{};
+        
+        class Data{
+        private:
+        
+        using Flow = std::vector<std::pair<size_t, char*>>;
+        std::vector<Flow> flows;
+        public:
+            Data() = default;
+            Data(u_char const * const flows_buff, size_t length) { from_buffer(flows_buff, length); }
+            
+            void from_buffer(u_char const * const flows_buff, size_t length){
+            }
+        };
 
         static std::map<uint16_t, Template> tmpls; // all templates
         static std::map<uint16_t, Options_T> optns;  // all options
+        std::vector<std::pair<uint16_t, Data>> dataflows; // all readed flows by template id
 
     public:
         NF9_10_Pack() = default;
@@ -263,7 +276,7 @@ namespace netflow_v9_v10
                 // loops for different Template, Option or Data in the same flowset
                 u_char *temp_buff = nullptr; 
 
-                // Templates
+                // --- Templates
                 if (flow_hdr.id == 0){
                     for(;flow_buf_index < (current_base_index + flow_hdr.len);){
 
@@ -285,7 +298,8 @@ namespace netflow_v9_v10
                         flow_buf_index += template_head.len;
                     }
                 }
-                // Options
+
+                // -- Options
                 else if (flow_hdr.id == 0){
                     for(; flow_buf_index < (current_base_index + flow_hdr.len);){
 
@@ -307,11 +321,21 @@ namespace netflow_v9_v10
                         flow_buf_index += s;
                     }
                 }
-                // Data
+
+                // --- Data
                 else {}
+            }
+        }
+
+        ~NF9_10_Pack(){
+            for (size_t i = 0; i < unreaded.size(); i++){
+                delete unreaded[i];
+                unreaded[i] = nullptr;
             }
         }
         
     private:
+        std::vector<char*> unreaded;
+
     };
 };

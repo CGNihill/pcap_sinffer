@@ -187,15 +187,15 @@ namespace netflow_v9_v10
 
             };
 
-            class Options{
+            class Options_T{
             private:
 
                 std::vector<Comon_str> fields;
                 uint16_t id, scope_len, length; 
 
             public:
-                Options() = default;
-                Options(u_char const * const options_buff, const size_t len){ from_buffer(options_buff, len); }
+                Options_T() = default;
+                Options_T(u_char const * const options_buff, const size_t len){ from_buffer(options_buff, len); }
 
                 void from_buffer(u_char const * const options_buff, const size_t len){
 
@@ -225,12 +225,12 @@ namespace netflow_v9_v10
                     }
                 }
 
-                ~Options() = default;
+                ~Options_T() = default;
 
             };
 
             static std::map<uint16_t, Template> tmpls; // all templates
-            static std::map<uint16_t, Options> optns;  // all options
+            static std::map<uint16_t, Options_T> optns;  // all options
 
         public:
             NF9_Pack() = default;
@@ -241,6 +241,8 @@ namespace netflow_v9_v10
                 head.to_current_byte_order();
 
                 size_t flow_buf_index = sizeof(header);
+
+                // loop for differnt flowsets
                 for(size_t i = 0; flow_buf_index < length; i++){
                     Comon_str flow_hdr = *(Comon_str*)(buffer + flow_buf_index);
 
@@ -253,49 +255,52 @@ namespace netflow_v9_v10
                     flow_buf_index += sizeof(Comon_str);
                     uint16_t current_base_index = flow_buf_index;
 
+                    // loops for different Template, Option or Data in the same flowset
                     u_char *temp_buff = nullptr; 
                     if (flow_hdr.id == 0){
                         for(;flow_buf_index < (current_base_index + flow_hdr.len);){
+
                             //get template id and template count
                             Comon_str template_head = *(Comon_str*)(buffer + flow_buf_index);
                             template_head.to_current_byte_order();
 
                             // create a buffer for Template constructor
-                            size_t s = (sizeof(Comon_str) + template_head.len * sizeof(uint16_t) * 2);
 
-                            if (s > (current_base_index + flow_hdr.len)){
+                            if (template_head.len > flow_hdr.len){
                                 throw std::runtime_error("FlowSet buffer length is insufficient for the next template.");
                             }
 
-                            memcpy(temp_buff, (buffer + flow_buf_index), s);
+                            temp_buff = new u_char[template_head.len];
+                            memcpy(temp_buff, (buffer + flow_buf_index), template_head.len);
 
-                            tmpls[template_head.id] = Template(temp_buff, s);
+                            tmpls[template_head.id] = Template(temp_buff, template_head.len);
 
-                            flow_buf_index += s;
+                            flow_buf_index += template_head.len;
                         }
                     }
-                    if (flow_hdr.id == 0){
-                        for(;flow_buf_index < (current_base_index + flow_hdr.len);){
-                            //get template id and template count
+                    else if (flow_hdr.id == 0){
+                        for(; flow_buf_index < (current_base_index + flow_hdr.len);){
+
+                            //get OptinTemplate id and template count
                             Comon_str template_head = *(Comon_str*)(buffer + flow_buf_index);
                             template_head.to_current_byte_order();
+                            uint16_t option_buf_len = ntohs(*(uint16_t*)(buffer + flow_buf_index + sizeof(Comon_str)));
 
                             // create a buffer for Template constructor
-                            size_t s = (sizeof(Comon_str) + template_head.len * sizeof(uint16_t) * 2);
+                            size_t s = (sizeof(uint16_t) * 3 + option_buf_len);
 
-                            if (s > (current_base_index + flow_hdr.len)){
+                            if (s > flow_hdr.len){
                                 throw std::runtime_error("FlowSet buffer length is insufficient for the next template.");
                             }
 
                             memcpy(temp_buff, (buffer + flow_buf_index), s);
 
-                            tmpls[template_head.id] = Template(temp_buff, s);
+                            optns[template_head.id] = Options_T(temp_buff, s);
 
                             flow_buf_index += s;
                         }
                     }
-
-                    // flow_buf_index += flow_hdr.len;
+                    else {}
                 }
             }
     };

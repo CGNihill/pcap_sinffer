@@ -244,8 +244,9 @@ namespace netflow_v9_v10
             }
         };
 
-        static std::map<uint16_t, Template> tmpls; // all templates
-        static std::map<uint16_t, Options_T> optns;  // all options
+        // map<version, map<flowsetID, Template>>
+        static std::map<uint8_t, std::map<uint16_t, Template>> tmpls; // all templates
+        static std::map<uint8_t, std::map<uint16_t, Options_T>> optns;  // all options
         std::vector<std::pair<uint16_t, Data>> dataflows; // all readed flows by template id
 
     public:
@@ -257,6 +258,19 @@ namespace netflow_v9_v10
             head = *(header*)buffer;
 
             head.to_current_byte_order();
+
+            // additional check netflow version
+            switch (head.comon.version)
+            {
+            case 9:
+            case 10:
+                // good netflow version
+                break;
+
+            default:
+                throw std::runtime_error("Unexpected netflow version");
+                break;
+            }
 
             size_t flow_buf_index = sizeof(header);
 
@@ -293,7 +307,7 @@ namespace netflow_v9_v10
                         temp_buff = new u_char[template_head.len];
                         memcpy(temp_buff, (buffer + flow_buf_index), template_head.len);
 
-                        tmpls[template_head.id] = Template(temp_buff, template_head.len);
+                        tmpls[head.comon.version][template_head.id] = Template(temp_buff, template_head.len);
 
                         flow_buf_index += template_head.len;
                     }
@@ -316,7 +330,7 @@ namespace netflow_v9_v10
 
                         memcpy(temp_buff, (buffer + flow_buf_index), s);
 
-                        optns[template_head.id] = Options_T(temp_buff, s);
+                        optns[head.comon.version][template_head.id] = Options_T(temp_buff, s);
 
                         flow_buf_index += s;
                     }

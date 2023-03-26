@@ -1,0 +1,5 @@
+/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/client/build/CMakeFiles/pcsniff.dir
+/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/client/build/CMakeFiles/proto_pack.dir
+/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/client/build/CMakeFiles/sniff.dir
+/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/client/build/CMakeFiles/edit_cache.dir
+/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/client/build/CMakeFiles/rebuild_cache.dir

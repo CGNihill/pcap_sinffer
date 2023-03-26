@@ -1,0 +1,2 @@
+/usr/bin/ar qc libproto_pack.a CMakeFiles/proto_pack.dir/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/external/protobuff/gen/pack.pb.cc.o
+/usr/bin/ranlib libproto_pack.a

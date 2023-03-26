@@ -225,28 +225,6 @@ namespace netflow_v9_v10
                 memcpy(new_buff + sizeof(Comon_str), flowset_buff + sizeof(Comon_str) + buffer_index, s);
 
                 Template(new_buff, tmpl);
-/*
-                #if __BYTE_ORDER == __LITTLE_ENDIAN
-                id = ntohs(*(uint16_t*)flowset_buff);
-                count = ntohs(*(uint16_t*)(flowset_buff + sizeof(uint16_t)));
-                #endif
-                #if __BYTE_ORDER == __BIG_ENDIAN
-                id = *(uint16_t*)flowset_buff;
-                count = *(uint16_t*)(flowset_buff + sizeof(uint16_t));
-                #endif
-
-                if (len < (sizeof(uint16_t) * 2 + sizeof(Comon_str) * count)){
-                    throw std::runtime_error("Template buffer length is insufficient.");
-                }
-
-                for(size_t i = 0; i < count; i++){
-                    Comon_str field = *(Comon_str*)(flowset_buff + (sizeof(uint16_t) * 2 + sizeof(Comon_str) * i));
-
-                    field.to_current_byte_order();
-
-                    fields.push_back(field);
-                }
-                */
             }
 
             const std::vector<Comon_str>& get_template_fields() const { return fields; }
@@ -257,50 +235,6 @@ namespace netflow_v9_v10
 
         };
 
-/*
-        class Options_T{
-        private:
-
-            std::vector<Comon_str> fields;
-            uint16_t id, scope_len, length; 
-
-        public:
-            Options_T() = default;
-            Options_T(u_char const * const options_buff, const size_t len){ from_buffer(options_buff, len); }
-
-            void from_buffer(u_char const * const options_buff, const size_t len){
-
-                #if __BYTE_ORDER == __LITTLE_ENDIAN
-                id = ntohs(*(uint16_t*)options_buff);
-                scope_len = ntohs(*(uint16_t*)(options_buff + sizeof(uint16_t)));
-                length = ntohs(*(uint16_t*)(options_buff + sizeof(uint16_t) * 2));
-                #endif
-                #if __BYTE_ORDER == __BIG_ENDIAN
-                id = *(uint16_t*)options_buff;
-                scope_len = *(uint16_t*)(options_buff + sizeof(uint16_t));
-                length = *(uint16_t*)(options_buff + sizeof(uint16_t) * 2);
-                #endif
-
-                uint16_t count = scope_len + length;
-
-                if (len < (sizeof(uint16_t) * 2 + sizeof(Comon_str) * count)){
-                    throw std::runtime_error("Template buffer length is insufficient.");
-                }
-
-                for(size_t i = 0; i < count; i++){
-                    Comon_str field = *(Comon_str*)(options_buff + (sizeof(uint16_t) * 2 + sizeof(Comon_str) * i));
-                    
-                    field.to_current_byte_order();
-
-                    fields.push_back(field);
-                }
-            }
-
-            ~Options_T() = default;
-
-        };
-*/
-        
         class Data{
         private:
             struct Flow{

@@ -1,3 +1,0 @@
-/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/server/build/CMakeFiles/server.dir
-/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/server/build/CMakeFiles/edit_cache.dir
-/home/Nihill/Documents/out/after_all/pcap+protobuf+cnats+clickhouse/server/build/CMakeFiles/rebuild_cache.dir

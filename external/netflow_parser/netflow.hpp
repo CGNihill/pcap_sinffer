@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <array>
 
-struct comon_netflow_header
+struct common_netflow_header
 {
     uint16_t version, count;
 
@@ -25,7 +25,7 @@ namespace netflow_v5
 {
     struct Header
     {
-        struct comon_netflow_header comon;
+        struct common_netflow_header common;
         uint32_t sys_uptime, unix_secs, unix_nsecs, flow_sequence;
         uint8_t engine_type, engine_id;
         struct
@@ -42,7 +42,7 @@ namespace netflow_v5
 
         constexpr void to_current_byte_order(){
             #if __BYTE_ORDER == __LITTLE_ENDIAN
-            comon.to_current_byte_order();
+            common.to_current_byte_order();
             sys_uptime = ntohl(sys_uptime);
             unix_secs = ntohl(unix_secs);
             unix_nsecs = ntohl(unix_nsecs);
@@ -93,10 +93,10 @@ namespace netflow_v5
      */
     std::vector<FlowRecord> parseFlow(Header &header, const unsigned char *data, const size_t pack_len)
     {
-        if (pack_len < sizeof(FlowRecord) * ntohs(header.comon.count))
+        if (pack_len < sizeof(FlowRecord) * ntohs(header.common.count))
             throw std::length_error("the size of the data packet does not match the calculated size");
         std::vector<FlowRecord> flowset;
-        for (int i = 0; i < ntohs(header.comon.count); i++)
+        for (int i = 0; i < ntohs(header.common.count); i++)
         {
             flowset.push_back(*(FlowRecord *)(data + (sizeof(FlowRecord) * i)));
         }
@@ -109,12 +109,12 @@ namespace netflow_v9_v10
 {
 
     struct header{
-        struct comon_netflow_header comon;
+        struct common_netflow_header common;
         uint32_t sysUptime, UnixSecs, SequenceNumber, SID;
 
         constexpr void to_current_byte_order(){
             #if __BYTE_ORDER == __LITTLE_ENDIAN
-            comon.to_current_byte_order();
+            common.to_current_byte_order();
             sysUptime = ntohl(sysUptime);
             UnixSecs = ntohl(UnixSecs);
             SequenceNumber = ntohl(SequenceNumber);
@@ -128,7 +128,7 @@ namespace netflow_v9_v10
         header head;
 
         // frequently used structure used for : FlowSet_header, Field, DATA Template...
-        struct Comon_str{
+        struct common_str{
             uint16_t id, len;
             
             constexpr void to_current_byte_order(){
@@ -154,7 +154,7 @@ namespace netflow_v9_v10
         class Template{
         private:
 
-            std::vector<Comon_str> fields;
+            std::vector<common_str> fields;
             uint16_t id, count; 
             size_t s = 0;
 
@@ -163,17 +163,17 @@ namespace netflow_v9_v10
             Template(u_char const * const flowset_buff, std::map<uint16_t, Template>& tmpl){ from_buffer(flowset_buff, tmpl); }
 
             void from_buffer(u_char const * const flowset_buff, std::map<uint16_t, Template>& tmpl){
-                Comon_str flowset_header = *(Comon_str*)(flowset_buff);
+                common_str flowset_header = *(common_str*)(flowset_buff);
                 flowset_header.to_current_byte_order();
 
-                size_t buffer_index = sizeof(Comon_str);
+                size_t buffer_index = sizeof(common_str);
 
                 // check if is data or option template
-                Comon_str template_data;
+                common_str template_data;
                 switch(flowset_header.id){
                     case 0:{
-                        template_data = *(Comon_str*)(flowset_buff + buffer_index);
-                        buffer_index += sizeof(Comon_str);
+                        template_data = *(common_str*)(flowset_buff + buffer_index);
+                        buffer_index += sizeof(common_str);
                         }
                         break;
 
@@ -183,7 +183,7 @@ namespace netflow_v9_v10
                             buffer_index += sizeof(Option_header);
 
                             template_data.id = oph.id;
-                            template_data.len = (oph.len + oph.s_len)/sizeof(Comon_str);
+                            template_data.len = (oph.len + oph.s_len)/sizeof(common_str);
                         }
                         break;
 
@@ -196,14 +196,14 @@ namespace netflow_v9_v10
 
                 for(size_t i = 0; i < template_data.len; i++){
 
-                    if (flowset_header.len < buffer_index + (template_data.len * sizeof(Comon_str))){
+                    if (flowset_header.len < buffer_index + (template_data.len * sizeof(common_str))){
                         throw std::runtime_error("FlowSet buffer length is insufficient for the next template.");
                     }
 
-                    fields.push_back(*(Comon_str*)(flowset_buff + buffer_index));
+                    fields.push_back(*(common_str*)(flowset_buff + buffer_index));
                     fields[fields.size() - 1].to_current_byte_order();
                     s += fields[fields.size() - 1].len;
-                    buffer_index += sizeof(Comon_str);
+                    buffer_index += sizeof(common_str);
                 }
 
                 tmpl[template_data.id] = *this;
@@ -214,20 +214,20 @@ namespace netflow_v9_v10
 
                 // if we have more templates / create new flowset
 
-                buffer_index -= sizeof(Comon_str);
+                buffer_index -= sizeof(common_str);
 
                 size_t s = (flowset_header.len - buffer_index);
                 u_char *new_buff = new u_char[s];
 
                 flowset_header.to_current_byte_order();
 
-                memcpy(new_buff, &flowset_header, sizeof(Comon_str));
-                memcpy(new_buff + sizeof(Comon_str), flowset_buff + sizeof(Comon_str) + buffer_index, s);
+                memcpy(new_buff, &flowset_header, sizeof(common_str));
+                memcpy(new_buff + sizeof(common_str), flowset_buff + sizeof(common_str) + buffer_index, s);
 
                 Template(new_buff, tmpl);
             }
 
-            const std::vector<Comon_str>& get_template_fields() const { return fields; }
+            const std::vector<common_str>& get_template_fields() const { return fields; }
 
             size_t data_size() const { return s; }
 
@@ -258,12 +258,12 @@ namespace netflow_v9_v10
             Data(u_char const * const flowset_buff, Template& tmpl){ from_buffer(flowset_buff, tmpl); }
 
             void from_buffer(u_char const * const flowset_buff, Template& tmpl){
-                Comon_str flow_hdr = *(Comon_str*)(flowset_buff);
+                common_str flow_hdr = *(common_str*)(flowset_buff);
                 flow_hdr.to_current_byte_order();
 
-                size_t buff_index = sizeof(Comon_str);
+                size_t buff_index = sizeof(common_str);
 
-                const std::vector<Comon_str> cur_field = tmpl.get_template_fields();
+                const std::vector<common_str> cur_field = tmpl.get_template_fields();
 
                 while(1){
                     if((tmpl.data_size() + buff_index) > (flow_hdr.len - sizeof(uint32_t))){
@@ -309,7 +309,7 @@ namespace netflow_v9_v10
             head.to_current_byte_order();
 
             // additional check netflow version
-            switch (head.comon.version)
+            switch (head.common.version)
             {
             case 9:
             case 10:
@@ -325,7 +325,7 @@ namespace netflow_v9_v10
 
             // loop for differnt flowsets
             for(size_t i = 0; flow_buf_index < length; i++){
-                Comon_str flow_hdr = *(Comon_str*)(buffer + flow_buf_index);
+                common_str flow_hdr = *(common_str*)(buffer + flow_buf_index);
 
                 flow_hdr.to_current_byte_order();
 
@@ -333,7 +333,7 @@ namespace netflow_v9_v10
                     throw std::runtime_error("Buffer length is insufficient for the next flowset.");
                 }
 
-                flow_buf_index += sizeof(Comon_str);
+                flow_buf_index += sizeof(common_str);
                 uint16_t current_base_index = flow_buf_index;
 
                 // loops for different Template, Option or Data in the same flowset
@@ -341,12 +341,12 @@ namespace netflow_v9_v10
 
                 // --- Templates / Options
                 if (flow_hdr.id == 0 || flow_hdr.id == 1){
-                    Template((buffer + flow_buf_index), tmpls[head.comon.version]);
-                    tmpls[head.comon.version];
+                    Template((buffer + flow_buf_index), tmpls[head.common.version]);
+                    tmpls[head.common.version];
                     for(;flow_buf_index < (current_base_index + flow_hdr.len);){
 
                         //get template id and template count
-                        Comon_str template_head = *(Comon_str*)(buffer + flow_buf_index);
+                        common_str template_head = *(common_str*)(buffer + flow_buf_index);
                         template_head.to_current_byte_order();
 
                         // create a buffer for Template constructor
@@ -358,7 +358,7 @@ namespace netflow_v9_v10
                         temp_buff = new u_char[template_head.len];
                         memcpy(temp_buff, (buffer + flow_buf_index), template_head.len);
 
-                        tmpls[head.comon.version][template_head.id] = Template(temp_buff, tmpls[head.comon.version]);
+                        tmpls[head.common.version][template_head.id] = Template(temp_buff, tmpls[head.common.version]);
 
                         flow_buf_index += template_head.len;
                     }
@@ -370,8 +370,8 @@ namespace netflow_v9_v10
                         throw std::runtime_error("data-flowset does not match the patern (padding != 0)");
                     }
 
-                    if (tmpls.contains(head.comon.version) && tmpls[head.comon.version].contains(flow_hdr.id)){
-                        dataflows.push_back(std::make_pair(flow_hdr.id, Data((buffer + flow_buf_index), tmpls[head.comon.version][flow_hdr.id])));
+                    if (tmpls.contains(head.common.version) && tmpls[head.common.version].contains(flow_hdr.id)){
+                        dataflows.push_back(std::make_pair(flow_hdr.id, Data((buffer + flow_buf_index), tmpls[head.common.version][flow_hdr.id])));
                     }
                     else{
                         unreaded.push_back(new u_char[flow_hdr.len]);

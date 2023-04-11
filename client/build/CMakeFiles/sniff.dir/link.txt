@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/sniff.dir/main.cpp.o -o sniff  libproto_pack.a libpcsniff.a /usr/local/lib64/libprotobuf.a -lpcap 
